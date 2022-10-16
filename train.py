@@ -13,7 +13,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 loss_fn = nn.MSELoss()
 
 
-def train(lr=1e-2, n_epochs=1500, loss_fn=loss_fn, seed=1, X=None, y=None, model=None):
+def train(lr=1e-2, n_epochs=1000, loss_fn=loss_fn, seed=1, X=None, y=None, model=None):
 
     optimizer = optim.Adam(model.parameters(), lr=lr) # optimizer一定要放在循环里，因为优化器是和参数绑定的
     X_train, X_test, y_train, y_test = train_test_split(X.astype(np.float32), y, test_size=0.33, random_state=seed) 
@@ -49,6 +49,8 @@ def train(lr=1e-2, n_epochs=1500, loss_fn=loss_fn, seed=1, X=None, y=None, model
             loss_t4 = loss_fn(yhat_t4, y_batch_t4.view(-1, 1))
             # loss = 0.15*loss_t1 + 0.15*loss_t2 + 0.25*loss_t3 + 0.45*loss_t4
             loss = loss_t1 + loss_t2 + loss_t3 + loss_t4
+            if epoch%100 == 0:
+                print("epoch:{:4}----总loss:{:10.2f}, 任务loss:{:7.2f},{:7.2f},{:7.2f},{:7.2f}".format(epoch, loss, loss_t1, loss_t2, loss_t3, loss_t4))
             
             loss.backward()
             optimizer.step()

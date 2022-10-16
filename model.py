@@ -127,7 +127,6 @@ class AOE(nn.Module):
             self.attention.append(sum(temp))
         self.attention = torch.stack(self.attention)      # shape:torch.Size([4, 54, 64])                                       
 
-       
         # 拼接attention值和TaskNet输出值，然后送入Tower
         # 其实TaskNet的输出值就是query
         query_add_attention = self.query + self.attention   # shape:torch.Size([4, 54, 64])
