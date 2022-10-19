@@ -50,7 +50,7 @@ def train(lr=1e-2, n_epochs=1000, loss_fn=loss_fn, seed=1, X=None, y=None, model
             # loss = 0.15*loss_t1 + 0.15*loss_t2 + 0.25*loss_t3 + 0.45*loss_t4
             loss = loss_t1 + loss_t2 + loss_t3 + loss_t4
             if epoch%100 == 0:
-                print("epoch:{:4}----总loss:{:10.2f}, 任务loss:{:7.2f},{:7.2f},{:7.2f},{:7.2f}".format(epoch, loss, loss_t1, loss_t2, loss_t3, loss_t4))
+                print("epoch:{:4}---- [ 总loss:{:10.2f}, 任务loss:{:10.2f},{:10.2f},{:10.2f},{:10.2f} ]".format(epoch, loss, loss_t1, loss_t2, loss_t3, loss_t4))
             
             loss.backward()
             optimizer.step()

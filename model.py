@@ -16,9 +16,11 @@ class TaskNet(nn.Module):
         self.query_dim = hidden_dim
         self.fc1 = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU()
+            nn.LeakyReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.LeakyReLU()
         )
 
     def forward(self, X):
@@ -39,9 +41,11 @@ class Expert(nn.Module):
         self.key_dim = hidden_dim
         self.fc1 = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU()
+            nn.LeakyReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.LeakyReLU()
         )
 
     def forward(self, X):
@@ -54,11 +58,11 @@ class Tower(nn.Module):
         super(Tower, self).__init__()
         self.fc1 = nn.Sequential(
             nn.Linear(hidden_dim, 128),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Linear(128, 64),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Linear(64, 16),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Linear(16, output_dim)
         )
 
@@ -109,6 +113,7 @@ class AOE(nn.Module):
             alpha_temp = torch.stack(alpha_temp)
             self.alpha.append(alpha_temp)
         self.alpha = torch.stack(self.alpha)
+        self.alpha = self.alpha / self.key.shape[1] 
         self.alpha = self.softmax(self.alpha)    
 
         # 计算value向量
