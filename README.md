@@ -15,3 +15,21 @@ attention = alpha * value; value = key
 
 TowerInput = query + atention
 
+#### 2.2 GradNorm
+
+![GradNorm算法思想](D:\WorkSpace\MTL-code\img\GradNorm算法思想.jpg)
+
+### 3 文件解释
+
+#### 3.1 AOE
+
+该文件里的train函数未集成GradNorm
+
+#### 3.2 AOE with GradNorm
+
+train函数已经集成GradNorm
+
+#### 3.3 img
+
+存储一些相关笔记的图片
+

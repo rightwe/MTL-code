@@ -43,13 +43,17 @@ class Expert(nn.Module):
             nn.Linear(input_dim, hidden_dim),
             nn.LeakyReLU(),
             nn.Linear(hidden_dim, hidden_dim),
-            nn.LeakyReLU(),
-            nn.Linear(hidden_dim, hidden_dim),
             nn.LeakyReLU()
+            # nn.Linear(hidden_dim, hidden_dim),
+            # nn.LeakyReLU()
         )
+        self.last_layer = nn.Linear(hidden_dim, hidden_dim)
+        self.active = nn.LeakyReLU()
 
     def forward(self, X):
         key = self.fc1(X)
+        key = self.last_layer(key)
+        key = self.active(key) 
         return key
 
 
@@ -74,6 +78,8 @@ class Tower(nn.Module):
 class AOE(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, task_num, expert_num):
         super(AOE, self).__init__()
+        # 建立动态权重
+        self.dynamic_weights = torch.nn.Parameter(torch.ones(task_num).float())
         # some dim
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
