@@ -1,4 +1,3 @@
-from mimetypes import init
 from model import AOE
 from train_gradnorm import train
 from read_file import read_file
@@ -12,7 +11,6 @@ import torch.nn as nn
 ## 不太行 = [45,99,78, 36]
 ## 一般般 = [2000, 32, 47]
 SEEDS = [1, 7, 21, 46, 18]
-
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 # Xavier 网络参数初始化
@@ -41,9 +39,9 @@ def main():
         model = model.to(device)
         print("第{}个随机种子为{}".format(index, seed))
 
-        r2_t1, r2_t2, r2_t3, r2_t4 = train(lr=1e-2, n_epochs=1300, seed=seed, model=model, X=X, y=y, isGradNorm=True)
+        r2_t1, r2_t2, r2_t3, r2_t4 ,dynamic_w_list= train(lr=1e-2, n_epochs=1300, seed=seed, model=model, X=X, y=y, isGradNorm=True)
 
-        print("当前随机种子下, r2为:{}".format([r2_t1, r2_t2, r2_t3, r2_t4]))
+        print("当前随机种子{}, 其r2为:{}".format(seed ,[r2_t1, r2_t2, r2_t3, r2_t4]))
         r2_t1_sum = r2_t1_sum + r2_t1
         r2_t2_sum = r2_t2_sum + r2_t2
         r2_t3_sum = r2_t3_sum + r2_t3
@@ -51,5 +49,5 @@ def main():
 
     print("五折验证的平均值为：[{:6.3f},{:6.3f},{:6.3f},{:6.3f}]".format(r2_t1_sum / 5, r2_t2_sum / 5, r2_t3_sum / 5, r2_t4_sum / 5))
 
-
+    return dynamic_w_list
 main()

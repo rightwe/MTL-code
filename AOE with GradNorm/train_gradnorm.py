@@ -28,6 +28,9 @@ def train(lr=1e-2, n_epochs=1000, loss_fn=loss_fn, seed=1, X=None, y=None, model
     train_loader = DataLoader(dataset=getTensorDataset(X_train, y_train), batch_size=54)
     val_loader = DataLoader(dataset=getTensorDataset(X_test,y_test),batch_size=37)
 
+    # 用来保存每100轮时的动态权重
+    dynamic_w_list = []
+
     # Training loop
     for epoch in range(n_epochs):
         model.train()
@@ -46,17 +49,24 @@ def train(lr=1e-2, n_epochs=1000, loss_fn=loss_fn, seed=1, X=None, y=None, model
             # 对每个tower分别计算损失，一共有4个
             label_loss_train = [loss_fn(y_hat.to(torch.float32), y_true.view(-1, 1)) for y_true, y_hat in zip([y_batch[:,i] for i in range(y_batch.shape[1])], yhat)]
 
-            # 计算总损失
+            # 输出并保存动态权重
+            if epoch%100 == 0:
+                print("epoch:{:4} --- [ 任务损失动态权重为：{} ]".format(epoch, [round(a.item(), 2) for a in model.dynamic_weights]))
+                dynamic_w_list.append([round(a.item(), 2) for a in model.dynamic_weights])
+            # 计算动态加权总损失
             loss_weighted = torch.mul(torch.stack(label_loss_train), model.dynamic_weights).sum()
 
             optimizer.zero_grad()
             loss_weighted.backward(retain_graph=True)
 
+            # 动态权重梯度清0
+            model.dynamic_weights.grad.data = model.dynamic_weights.grad.data * 0.0
 
-            #--------------------------梯度规范操作------------------------------------------
+
+            #---------------------------------梯度规范操作------------------------------------------
             if isGradNorm:
                 # 1. 获取共享层最后一层的神经网络参数
-                last_layer_weight = model.expert_list[1].last_layer ## 此代码是伪代码，最后再将其实现
+                last_layer_weight = model.expert_list[1].last_layer 
 
                 # 2. 初始化0时刻的任务损失
                 if epoch == 0:
@@ -79,9 +89,10 @@ def train(lr=1e-2, n_epochs=1000, loss_fn=loss_fn, seed=1, X=None, y=None, model
                 #    然后再用这个梯度与该任务对应的动态权重相乘----> 然后进行范数计算，得到了梯度范数
                 norms = []
                 for i in range(len(label_loss_train)):
-                    W_grad = torch.autograd.grad(outputs=label_loss_train, inputs=last_layer_weight.parameters(), retain_graph=True)
+                    W_grad = torch.autograd.grad(outputs=label_loss_train[i], inputs=last_layer_weight.parameters(), retain_graph=True)
                     norms.append(torch.norm(torch.mul(model.dynamic_weights[i], W_grad[0]))) # 将梯度范数加入norm列表
                 norms = torch.stack(norms)
+
 
                 # 5. 计算平均范数
                 if torch.cuda.is_available():
@@ -91,7 +102,7 @@ def train(lr=1e-2, n_epochs=1000, loss_fn=loss_fn, seed=1, X=None, y=None, model
 
                 # 6. 计算梯度范数损失  
                 #    = 梯度范数 - 常数项
-                constant_term = torch.tensor(mean_norm * (inverse_train_rate ** 0.01), requires_grad=False)
+                constant_term = torch.tensor(mean_norm * (inverse_train_rate ** 0.1), requires_grad=False)
                 if torch.cuda.is_available():
                     constant_term = constant_term.cuda()
 
@@ -101,13 +112,11 @@ def train(lr=1e-2, n_epochs=1000, loss_fn=loss_fn, seed=1, X=None, y=None, model
                 #    之后通过optimizer更新该动态权重
                 model.dynamic_weights.grad = torch.autograd.grad(grad_norm_loss, model.dynamic_weights)[0]
 
-
-            #-------------------------------------------------------------------------------
+            #-----------------------------------------------------------------------------------------------
             
             if epoch%100 == 0:
                 print("epoch:{:4} --- [ 总loss:{:10.2f}, 任务loss:{} ]".format(epoch, loss_weighted.item(), [round(item.item(), 2) for item in label_loss_train]))
             
-
             optimizer.step()
         
         # renormalize
@@ -140,4 +149,4 @@ def train(lr=1e-2, n_epochs=1000, loss_fn=loss_fn, seed=1, X=None, y=None, model
                 val_r2 = r2_t1_val + r2_t2_val + r2_t3_val + r2_t4_val
                 # print('Validation阶段 r2_t1:{}, r2_t2:{}, r2_t3:{},r2_t4:{}'.format(r2_t1_val, r2_t2_val, r2_t3_val, r2_t4_val))
         
-    return r2_t1_val, r2_t2_val, r2_t3_val, r2_t4_val
+    return r2_t1_val, r2_t2_val, r2_t3_val, r2_t4_val, dynamic_w_list
